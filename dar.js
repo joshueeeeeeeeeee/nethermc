@@ -1,70 +1,41 @@
-const portal = document.querySelector(".portal");
-const loading = document.querySelector(".loading");
-const loadingText = document.querySelector(".loading-text");
-const loadingDuration = 1200;
-let isLoading = false;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minecraft Switch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dar.css">
+</head>
+<body>
 
-// sound for the "under" scene (plays when the portal is on)
-const netherSound = new Audio("audio/Nether.mp3");
-// netherSound.loop = true;   // uncomment to loop while "under" is showing
+  <div class="bg bg-nether">
+  <div class="lava"></div>
+  <div class="particles" data-type="ember"></div>
+</div>
 
-// make the portal behave like a proper toggle (keyboard + screen readers)
-portal.setAttribute("role", "switch");
-portal.setAttribute("tabindex", "0");
-portal.setAttribute("aria-checked", "false");
-portal.setAttribute("aria-label", "Toggle portal");
 
-function flip() {
-  const isOn = document.body.classList.toggle("on");
-  portal.setAttribute("aria-checked", String(isOn));
+  <div class="portal">
+    <img src="image/portal.png" alt="Portal">
+    <img src="image/inactive.png" alt="Portal">
+  </div>
 
-  if (isOn) {
-    netherSound.currentTime = 0;
-    netherSound.play().catch(() => {});   // 🔊 "under" is showing
-  } else {
-    netherSound.pause();                  // "land" is showing, no sound
-  }
-}
 
-function loadAndFlip() {
-  if (isLoading) return;
+  <div class="bg">
+    <img src="image/land.jpg" alt="Portal">
+    <img src="image/under.jpg" alt="Portal">
+  </div>
 
-  isLoading = true;
-  loadingText.textContent = document.body.classList.contains("on")
-    ? "RETURNING..."
-    : "LOADING...";
-  loading.setAttribute("aria-hidden", "false");
-  document.body.classList.add("loading-active");
-  portal.setAttribute("aria-disabled", "true");
+  <div class="loading" role="status" aria-live="polite" aria-hidden="true">
+    <div class="loading-box">
+      <span class="loading-text">LOADING...</span>
+      <span class="loading-bar" aria-hidden="true"><span></span></span>
+    </div>
+  </div>
 
-  window.setTimeout(() => {
-    flip();
-    loading.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("loading-active");
-    portal.setAttribute("aria-disabled", "false");
-    isLoading = false;
-  }, loadingDuration);
-}
+  <h1>Lever Switch</h1>
 
-portal.addEventListener("click", loadAndFlip);
 
-portal.addEventListener("keydown", (e) => {
-  if (e.key === " " || e.key === "Enter") {
-    e.preventDefault();
-    loadAndFlip();
-  }
-});
-
-// floating embers for the nether overlay
-const embers = document.querySelector('.particles[data-type="ember"]');
-const rand = (min, max) => Math.random() * (max - min) + min;
-
-for (let i = 0; i < 30; i++) {
-  const p = document.createElement("span");
-  p.style.setProperty("--x", rand(0, 100) + "%");
-  p.style.setProperty("--size", Math.round(rand(3, 8)) + "px");
-  p.style.setProperty("--d", rand(6, 14) + "s");
-  p.style.setProperty("--delay", -rand(0, 12) + "s");
-  p.style.setProperty("--drift", rand(-80, 80) + "px");
-  embers.appendChild(p);
-}
+  <script src="dar.js"></script>
+</body>
+</html>

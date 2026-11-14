@@ -1,272 +1,70 @@
-* { box-sizing: border-box; }
+const portal = document.querySelector(".portal");
+const loading = document.querySelector(".loading");
+const loadingText = document.querySelector(".loading-text");
+const loadingDuration = 1200;
+let isLoading = false;
 
-:root {
-  --portal-glow: 180, 76, 255;   /* purple portal glow (r, g, b) */
+// sound for the "under" scene (plays when the portal is on)
+const netherSound = new Audio("audio/Nether.mp3");
+// netherSound.loop = true;   // uncomment to loop while "under" is showing
+
+// make the portal behave like a proper toggle (keyboard + screen readers)
+portal.setAttribute("role", "switch");
+portal.setAttribute("tabindex", "0");
+portal.setAttribute("aria-checked", "false");
+portal.setAttribute("aria-label", "Toggle portal");
+
+function flip() {
+  const isOn = document.body.classList.toggle("on");
+  portal.setAttribute("aria-checked", String(isOn));
+
+  if (isOn) {
+    netherSound.currentTime = 0;
+    netherSound.play().catch(() => {});   // 🔊 "under" is showing
+  } else {
+    netherSound.pause();                  // "land" is showing, no sound
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-  font-family: "Press Start 2P", monospace;
-  color: #fff;
-  text-shadow: 3px 3px 0 #000;
-  background: #000;
-  image-rendering: pixelated;
+function loadAndFlip() {
+  if (isLoading) return;
+
+  isLoading = true;
+  loadingText.textContent = document.body.classList.contains("on")
+    ? "RETURNING..."
+    : "LOADING...";
+  loading.setAttribute("aria-hidden", "false");
+  document.body.classList.add("loading-active");
+  portal.setAttribute("aria-disabled", "true");
+
+  window.setTimeout(() => {
+    flip();
+    loading.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("loading-active");
+    portal.setAttribute("aria-disabled", "false");
+    isLoading = false;
+  }, loadingDuration);
 }
 
-/* ---------- Background images (the div with class "bg") ---------- */
-.bg {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  overflow: hidden;
-}
+portal.addEventListener("click", loadAndFlip);
 
-.bg img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  image-rendering: auto;
-  opacity: 0;
-  transform: scale(1.06);
-  transition: opacity .8s ease, transform 5s ease;
-}
+portal.addEventListener("keydown", (e) => {
+  if (e.key === " " || e.key === "Enter") {
+    e.preventDefault();
+    loadAndFlip();
+  }
+});
 
-/* inactive: land.jpg (first image) is showing */
-.bg:not(.bg-nether) img:first-child {
-  opacity: 1;
-  transform: scale(1);
-}
+// floating embers for the nether overlay
+const embers = document.querySelector('.particles[data-type="ember"]');
+const rand = (min, max) => Math.random() * (max - min) + min;
 
-/* active: under.jpg (second image) fades in */
-body.on .bg:not(.bg-nether) img:first-child {
-  opacity: 0;
-  transform: scale(1.06);
-}
-
-body.on .bg:not(.bg-nether) img:last-child {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* vignette so the UI pops */
-.bg:not(.bg-nether)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, .55) 100%);
-}
-
-/* ---------- Nether effects overlay (lava glow + embers, only when active) ---------- */
-.bg-nether {
-  z-index: -1;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .8s ease;
-}
-
-body.on .bg-nether { opacity: 1; }
-
-.bg-nether::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 115%,
-    rgba(255, 90, 0, .5) 0%, rgba(180, 30, 0, .25) 35%, transparent 65%);
-}
-
-.lava {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 14vh;
-  background: linear-gradient(to top, rgba(255, 120, 0, .7), transparent);
-  animation: lava-pulse 3s ease-in-out infinite alternate;
-}
-
-@keyframes lava-pulse {
-  from { opacity: .6; }
-  to   { opacity: 1; }
-}
-
-/* embers (spawned by JS) */
-.particles { position: absolute; inset: 0; pointer-events: none; }
-
-.particles span {
-  position: absolute;
-  bottom: -10px;
-  left: var(--x);
-  width: var(--size);
-  height: var(--size);
-  background: #ffb347;
-  box-shadow: 0 0 8px 2px rgba(255, 106, 0, .8);
-  animation: rise var(--d) var(--delay) linear infinite;
-}
-
-@keyframes rise {
-  0%   { transform: translate(0, 0); opacity: 1; }
-  100% { transform: translate(var(--drift), -105vh); opacity: 0; }
-}
-
-/* ---------- Title ---------- */
-h1 {
-  margin: 0;
-  padding: 18px 28px;
-  font-size: clamp(16px, 4.5vw, 28px);
-  letter-spacing: 2px;
-  color: #ffd84a;
-  text-align: center;
-  background: rgba(20, 20, 20, .65);
-  border: 4px solid #000;
-  box-shadow:
-    inset 4px 4px 0 rgba(255, 255, 255, .18),
-    inset -4px -4px 0 rgba(0, 0, 0, .45),
-    0 8px 0 rgba(0, 0, 0, .4);
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
-}
-
-/* ---------- The portal (replaces the switch) ---------- */
-.portal {
-  position: relative;
-  z-index: 1;
-  width: clamp(180px, 30vw, 320px);
-  aspect-ratio: 4 / 5;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .6));
-  transition: transform .2s ease, filter .6s ease;
-}
-
-.portal:hover  { transform: translateY(-4px) scale(1.03); }
-.portal:active { transform: scale(.98); }
-.portal:focus-visible { outline: 3px solid #fff; outline-offset: 8px; }
-.portal[aria-disabled="true"] { cursor: wait; }
-
-.portal img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  -webkit-user-drag: none;
-  transition: opacity .5s ease;
-}
-
-/* inactive: inactive.png (second image) is showing, portal.png (first) is hidden */
-.portal img:first-child { opacity: 0; }
-.portal img:last-child  { opacity: 1; }
-
-/* active: portal.png fades in and hums */
-body.on .portal img:first-child {
-  opacity: 1;
-  animation: portal-hum 2.4s ease-in-out infinite alternate;
-}
-
-body.on .portal img:last-child { opacity: 0; }
-
-body.on .portal {
-  filter:
-    drop-shadow(0 0 28px rgba(var(--portal-glow), .85))
-    drop-shadow(0 12px 20px rgba(0, 0, 0, .5));
-}
-
-@keyframes portal-hum {
-  from { filter: brightness(1); }
-  to   { filter: brightness(1.3); }
-}
-
-/* ---------- Portal loading overlay ---------- */
-.loading {
-  position: fixed;
-  inset: 0;
-  z-index: 5;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, .78);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity .2s ease, visibility .2s ease;
-}
-
-body.loading-active .loading {
-  opacity: 1;
-  visibility: visible;
-}
-
-.loading-box {
-  width: min(360px, calc(100vw - 40px));
-  padding: 28px 24px;
-  text-align: center;
-  background: #17121f;
-  border: 4px solid #000;
-  box-shadow: inset 4px 4px 0 rgba(255, 255, 255, .15), 0 8px 0 rgba(0, 0, 0, .6);
-}
-
-.loading-text {
-  display: block;
-  margin-bottom: 20px;
-  color: #ffd84a;
-  font-size: 12px;
-  line-height: 1.8;
-}
-
-.loading-bar {
-  display: block;
-  height: 18px;
-  padding: 3px;
-  border: 3px solid #000;
-  background: #322942;
-}
-
-.loading-bar span {
-  display: block;
-  width: 35%;
-  height: 100%;
-  background: #a44cff;
-  box-shadow: 0 0 10px rgba(var(--portal-glow), .8);
-  animation: loading-progress 1.2s ease-in-out infinite;
-}
-
-@keyframes loading-progress {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(155%); }
-  100% { transform: translateX(0); }
-}
-
-/* old lever switch is no longer used */
-.switch { display: none; }
-
-/* ---------- Hint text ---------- */
-body::after {
-  content: "CLICK THE PORTAL";
-  font-size: 10px;
-  color: #ddd;
-  opacity: .8;
-  animation: blink 1.6s steps(2, jump-none) infinite;
-}
-
-@keyframes blink {
-  50% { opacity: .25; }
-}
-
-/* ---------- Respect reduced motion ---------- */
-@media (prefers-reduced-motion: reduce) {
-  h1, body::after, .lava, .particles span,
-  body.on .portal img:first-child, .loading-bar span { animation: none; }
-  .bg img, .bg-nether, .portal, .portal img, .loading { transition: none; }
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement("span");
+  p.style.setProperty("--x", rand(0, 100) + "%");
+  p.style.setProperty("--size", Math.round(rand(3, 8)) + "px");
+  p.style.setProperty("--d", rand(6, 14) + "s");
+  p.style.setProperty("--delay", -rand(0, 12) + "s");
+  p.style.setProperty("--drift", rand(-80, 80) + "px");
+  embers.appendChild(p);
 }
