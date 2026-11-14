@@ -1,4 +1,8 @@
 const portal = document.querySelector(".portal");
+const loading = document.querySelector(".loading");
+const loadingText = document.querySelector(".loading-text");
+const loadingDuration = 1200;
+let isLoading = false;
 
 // sound for the "under" scene (plays when the portal is on)
 const netherSound = new Audio("audio/Nether.mp3");
@@ -22,12 +26,32 @@ function flip() {
   }
 }
 
-portal.addEventListener("click", flip);
+function loadAndFlip() {
+  if (isLoading) return;
+
+  isLoading = true;
+  loadingText.textContent = document.body.classList.contains("on")
+    ? "RETURNING..."
+    : "LOADING...";
+  loading.setAttribute("aria-hidden", "false");
+  document.body.classList.add("loading-active");
+  portal.setAttribute("aria-disabled", "true");
+
+  window.setTimeout(() => {
+    flip();
+    loading.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("loading-active");
+    portal.setAttribute("aria-disabled", "false");
+    isLoading = false;
+  }, loadingDuration);
+}
+
+portal.addEventListener("click", loadAndFlip);
 
 portal.addEventListener("keydown", (e) => {
   if (e.key === " " || e.key === "Enter") {
     e.preventDefault();
-    flip();
+    loadAndFlip();
   }
 });
 
