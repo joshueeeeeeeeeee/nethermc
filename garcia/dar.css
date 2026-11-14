@@ -1,0 +1,213 @@
+* { box-sizing: border-box; }
+
+:root {
+  --portal-glow: 180, 76, 255;   /* purple portal glow (r, g, b) */
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  font-family: "Press Start 2P", monospace;
+  color: #fff;
+  text-shadow: 3px 3px 0 #000;
+  background: #000;
+  image-rendering: pixelated;
+}
+
+/* ---------- Background images (the div with class "bg") ---------- */
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+}
+
+.bg img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  image-rendering: auto;
+  opacity: 0;
+  transform: scale(1.06);
+  transition: opacity .8s ease, transform 5s ease;
+}
+
+/* inactive: land.jpg (first image) is showing */
+.bg:not(.bg-nether) img:first-child {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* active: under.jpg (second image) fades in */
+body.on .bg:not(.bg-nether) img:first-child {
+  opacity: 0;
+  transform: scale(1.06);
+}
+
+body.on .bg:not(.bg-nether) img:last-child {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* vignette so the UI pops */
+.bg:not(.bg-nether)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, .55) 100%);
+}
+
+/* ---------- Nether effects overlay (lava glow + embers, only when active) ---------- */
+.bg-nether {
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .8s ease;
+}
+
+body.on .bg-nether { opacity: 1; }
+
+.bg-nether::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 115%,
+    rgba(255, 90, 0, .5) 0%, rgba(180, 30, 0, .25) 35%, transparent 65%);
+}
+
+.lava {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 14vh;
+  background: linear-gradient(to top, rgba(255, 120, 0, .7), transparent);
+  animation: lava-pulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes lava-pulse {
+  from { opacity: .6; }
+  to   { opacity: 1; }
+}
+
+/* embers (spawned by JS) */
+.particles { position: absolute; inset: 0; pointer-events: none; }
+
+.particles span {
+  position: absolute;
+  bottom: -10px;
+  left: var(--x);
+  width: var(--size);
+  height: var(--size);
+  background: #ffb347;
+  box-shadow: 0 0 8px 2px rgba(255, 106, 0, .8);
+  animation: rise var(--d) var(--delay) linear infinite;
+}
+
+@keyframes rise {
+  0%   { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(var(--drift), -105vh); opacity: 0; }
+}
+
+/* ---------- Title ---------- */
+h1 {
+  margin: 0;
+  padding: 18px 28px;
+  font-size: clamp(16px, 4.5vw, 28px);
+  letter-spacing: 2px;
+  color: #ffd84a;
+  text-align: center;
+  background: rgba(20, 20, 20, .65);
+  border: 4px solid #000;
+  box-shadow:
+    inset 4px 4px 0 rgba(255, 255, 255, .18),
+    inset -4px -4px 0 rgba(0, 0, 0, .45),
+    0 8px 0 rgba(0, 0, 0, .4);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* ---------- The portal (replaces the switch) ---------- */
+.portal {
+  position: relative;
+  z-index: 1;
+  width: clamp(180px, 30vw, 320px);
+  aspect-ratio: 4 / 5;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .6));
+  transition: transform .2s ease, filter .6s ease;
+}
+
+.portal:hover  { transform: translateY(-4px) scale(1.03); }
+.portal:active { transform: scale(.98); }
+.portal:focus-visible { outline: 3px solid #fff; outline-offset: 8px; }
+
+.portal img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transition: opacity .5s ease;
+}
+
+/* inactive: inactive.png (second image) is showing, portal.png (first) is hidden */
+.portal img:first-child { opacity: 0; }
+.portal img:last-child  { opacity: 1; }
+
+/* active: portal.png fades in and hums */
+body.on .portal img:first-child {
+  opacity: 1;
+  animation: portal-hum 2.4s ease-in-out infinite alternate;
+}
+
+body.on .portal img:last-child { opacity: 0; }
+
+body.on .portal {
+  filter:
+    drop-shadow(0 0 28px rgba(var(--portal-glow), .85))
+    drop-shadow(0 12px 20px rgba(0, 0, 0, .5));
+}
+
+@keyframes portal-hum {
+  from { filter: brightness(1); }
+  to   { filter: brightness(1.3); }
+}
+
+/* old lever switch is no longer used */
+.switch { display: none; }
+
+/* ---------- Hint text ---------- */
+body::after {
+  content: "CLICK THE PORTAL";
+  font-size: 10px;
+  color: #ddd;
+  opacity: .8;
+  animation: blink 1.6s steps(2, jump-none) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: .25; }
+}
+
+/* ---------- Respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  h1, body::after, .lava, .particles span,
+  body.on .portal img:first-child { animation: none; }
+  .bg img, .bg-nether, .portal, .portal img { transition: none; }
+}
